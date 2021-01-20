@@ -1,0 +1,13 @@
+- hosts: test
+  gather_facts: no
+  vars:
+    port: 9100
+  tasks:
+  - name: 关闭node_exporter服务
+    systemd: name=node_exporter state=stopped enabled=yes
+  - name: 删除node_exporter
+    file: path=/usr/local/node_exporter state=absent
+  - name: 删除node_exporter 
+    file: path=node_exporter-1.0.1.linux-amd64 state=absent
+  - name: 删除node_exporter服务
+    file: path=/usr/lib/systemd/system/node_exporter.service state=absent

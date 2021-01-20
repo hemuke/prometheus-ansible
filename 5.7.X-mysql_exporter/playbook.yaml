@@ -1,0 +1,41 @@
+- hosts: settleMysqlMonitors
+  gather_facts: no
+  vars:
+    port: 9104
+  tasks:
+  - name: 推送二进制文件
+    unarchive: src=mysqld_exporter-0.12.1.linux-amd64.tar.gz dest=/usr/local
+  - name: 重命名
+    shell: |
+         cd /usr/local
+         if [ ! -d mysqld_exporter ];then
+             mv mysqld_exporter-0.12.1.linux-amd64 mysqld_exporter
+         fi
+  - name: mysql初始化账号
+    shell: |
+         mysql -e "GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'mysqld_monitors'@'%' identified by 'asdWDDS12312'" > /dev/null 2>&1 
+         mysql -e "flush privileges" > /dev/null 2>&1
+  - name: 生成配置文件
+    shell: |
+         cd /usr/local/mysqld_exporter
+         cat <<EOF> /usr/local/mysqld_exporter/.my.cnf
+         [client]
+         user=mysqld_monitors
+         password=asdWDDS12312
+         host={{ inventory_hostname }}
+         port=3306
+         EOF
+  - name: 添加防火墙规则
+    iptables: chain=INPUT protocol=tcp match=tcp destination_port={{ port }} jump=ACCEPT action=insert
+  - name: 把防火墙规则加入到配置文件
+    shell: |
+         iptables-save > /etc/sysconfig/iptables
+  - name: 拷贝systemd配置文件 
+    copy: src=mysqld_exporter.service dest=/usr/lib/systemd/system
+  - name: 启动node_exporter服务
+    systemd: name=mysqld_exporter.service state=restarted enabled=yes daemon_reload=yes
+  - name: 推送注册脚本
+    copy: src=consul-register.sh dest=/usr/local/bin/
+  - name: 注册当前节点   
+    # 服务名 实例名 IP 端口 
+    shell: /bin/bash /usr/local/bin/consul-register.sh {{ group_names[0] }} {{ name }} {{ inventory_hostname }} {{ port }}    

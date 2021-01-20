@@ -1,0 +1,9 @@
+[Unit]
+Description=alertmanager
+[Service]
+ExecStart=/opt/monitor/alertmanager/alertmanager --config.file=/opt/monitor/alertmanager/alertmanager.yml
+ExecReload=/bin/kill -HUP 
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+{
+   "graph": "/data/docker",
+   "exec-opts": ["native.cgroupdriver=systemd"],
+   "registry-mirrors": [
+      "https://jek8a03u.mirror.aliyuncs.com"
+   ],
+   "max-concurrent-downloads": 10,
+   "max-concurrent-uploads": 5,
+   "log-opts": {
+      "max-size": "300m",
+      "max-file": "2"
+   },
+   "live-restore": true
+}

@@ -1,0 +1,19 @@
+- hosts: testhmk
+  vars:
+    - http_port: 8083
+  tasks:
+    - name: configure httpd server
+      template: src=./httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf
+      notify: Restart Httpd Server
+
+    - name: Check HTTPD
+      shell: /usr/sbin/httpd -t
+      register: httpd_check
+      notify: Restart Httpd Server
+      changed_when:
+        - httpd_check.stdout.find('OK')
+#        - false
+
+  handlers:
+    - name: Restart Httpd Server
+      systemd: name=httpd state=restarted

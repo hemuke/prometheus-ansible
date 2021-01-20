@@ -1,0 +1,78 @@
+- hosts: besRedisMonitors
+  gather_facts: no
+  vars:
+    - port1: 9121
+    - port2: 9122
+  tasks:
+  - name: 添加防火墙规则9121
+    iptables: chain=INPUT protocol=tcp match=tcp destination_port={{ port1 }} jump=ACCEPT action=insert
+  - name: 添加防火墙规则9122
+    iptables: chain=INPUT protocol=tcp match=tcp destination_port={{ port2 }} jump=ACCEPT action=insert
+  - name: 把防火墙规则加入到配置文件
+    shell: |
+         iptables-save > /etc/sysconfig/iptables
+  - name: 推送二进制文件
+    unarchive: src=redis_exporter-v1.13.1.linux-amd64.tar.gz dest=/usr/local
+  - name: 重命名
+    shell: |
+         cd /usr/local
+         if [ ! -d redis6379_exporter ];then
+             cp -a redis_exporter-v1.13.1.linux-amd64 redis6379_exporter
+         fi
+         if [ ! -d redis6380_exporter ];then
+             mv redis_exporter-v1.13.1.linux-amd64 redis6380_exporter
+         fi
+  - name: systemd配置文件redis6379_exporter
+    shell: |
+         cd /usr/lib/systemd/system
+         cat <<EOF> redis6379_exporter.service
+         [Unit]
+         Description=redis6379_exporter.service
+         [Service]
+         ExecStart=/usr/local/redis6379_exporter/redis_exporter --redis.addr={{ inventory_hostname }}:6379 --web.listen-address=0.0.0.0:{{ port1 }}
+         ExecReload=/bin/kill -HUP $MAINPID
+         KillMode=process
+         Restart=on-failure
+         [Install]
+         WantedBy=multi-user.target 
+         EOF
+  - name: systemd配置文件redis6380_exporter
+    shell: |
+         cd /usr/lib/systemd/system
+         cat <<EOF> redis6380_exporter.service
+         [Unit]
+         Description=redis6380_exporter.service
+         [Service]
+         ExecStart=/usr/local/redis6380_exporter/redis_exporter --redis.addr={{ inventory_hostname }}:6380 --web.listen-address=0.0.0.0:{{ port2 }}
+         ExecReload=/bin/kill -HUP $MAINPID
+         KillMode=process
+         Restart=on-failure
+         [Install]
+         WantedBy=multi-user.target 
+         EOF
+  - name: 推送注册脚本
+    copy: src=consul-register.sh dest=/usr/local/bin/
+  - name: 启动redis6379_exporter服务
+    systemd: name=redis6379_exporter.service state=restarted enabled=yes daemon_reload=yes
+    notify:
+      - consul-register-6379
+  - name: 启动redis6380_exporter服务
+    systemd: name=redis6380_exporter.service state=restarted enabled=yes daemon_reload=yes
+    notify:
+      - consul-register-6380
+
+  handlers:
+    - name: consul-register-6379
+      shell: /bin/bash /usr/local/bin/consul-register.sh {{ group_names[0] }} {{ item.name }} {{ item.inventory_hostname }} {{ port1 }}
+      with_items:
+      - {"name": "bes-redis-monitors6379-cluster001", "inventory_hostname": "192.168.167.229"}
+      - {"name": "bes-redis-monitors6379-cluster002", "inventory_hostname": "192.168.167.35"}
+      - {"name": "bes-redis-monitors6379-cluster003", "inventory_hostname": "192.168.167.64"} 
+      when: inventory_hostname == "192.168.167.229"
+    - name: consul-register-6380
+      shell: /bin/bash /usr/local/bin/consul-register.sh {{ group_names[0] }} {{ item.name }} {{ item.inventory_hostname }} {{ port2 }}
+      with_items:
+      - {"name": "bes-redis-monitors6380-cluster001", "inventory_hostname": "192.168.167.229"}
+      - {"name": "bes-redis-monitors6380-cluster002", "inventory_hostname": "192.168.167.35"}
+      - {"name": "bes-redis-monitors6380-cluster003", "inventory_hostname": "192.168.167.64"}
+      when: inventory_hostname == "192.168.167.229"

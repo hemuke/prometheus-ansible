@@ -1,0 +1,9 @@
+[Unit]
+Description=prometheus
+[Service]
+ExecStart=/opt/monitor/prometheus/prometheus --config.file=/opt/monitor/prometheus/prometheus.yml --log.level=info --alertmanager.timeout=10s --storage.tsdb.path=/data/prometheus/tsdb  --storage.tsdb.retention.time=15d --web.listen-address=0.0.0.0:9090
+ExecReload=/bin/kill -HUP 
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

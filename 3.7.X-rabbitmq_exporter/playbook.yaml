@@ -1,0 +1,30 @@
+- hosts: besRabbitMonitors002
+  gather_facts: no
+  vars:
+    port: 9419
+  tasks:
+  - name: 配置Yum仓库
+    shell: yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+  - name: 安装docker
+    yum: name=docker-ce-19.03.12 state=installed
+    register: docker_install
+  - name: 创建docker数据目录
+    file: path=/data/docker state=directory
+  - name: 创建docker配置文件目录
+    file: path=/etc/docker state=directory
+  - name: 拷贝docker配置文件
+    copy: src=daemon.json dest=/etc/docker/
+  - name: 启动服务
+    systemd: name=docker state=restarted enabled=yes daemon_reload=yes
+  - name: 拷贝rabbit_rabbitmq_exporter
+    copy: src=3.7.16-rabbitmq-exporter.tar dest=/tmp
+  - name: 导入rabbit_rabbitmq_exporter
+    shell: |
+         docker load -i /tmp/3.7.16-rabbitmq-exporter.tar && \
+         docker run -d --net=host --restart=on-failure:3 --name=rabbitmq-exporter rabbitmq-exporter:3.7.16  
+    when: docker_install.changed
+  - name: 推送注册脚本
+    copy: src=consul-register.sh dest=/usr/local/bin/
+  - name: 注册当前节点   
+    # 服务名 实例名 IP 端口 
+    shell: /bin/bash /usr/local/bin/consul-register.sh {{ group_names[0] }} {{ name }} {{ inventory_hostname }} {{ port }}    

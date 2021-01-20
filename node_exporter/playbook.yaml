@@ -1,0 +1,29 @@
+- hosts: settleESNodes
+  gather_facts: no
+  vars:
+    port: 9100
+  tasks:
+  - name: 推送二进制文件
+    unarchive: src=node_exporter-1.0.1.linux-amd64.tar.gz dest=/usr/local
+  - name: 重命名
+    shell: |
+         cd /usr/local
+         if [ ! -d node_exporter ];then
+             mv node_exporter-1.0.1.linux-amd64 node_exporter
+         fi
+  - name: 推送配置文件 用来9100 metric用户名认证来确定
+    copy: src=config.yml dest=/usr/local/node_exporter
+#  - name: 添加防火墙规则
+#    iptables: chain=INPUT protocol=tcp match=tcp destination_port=9100 jump=ACCEPT action=insert
+#  - name: 把防火墙规则加入到配置文件
+#    shell: |
+#         iptables-save > /etc/sysconfig/iptables
+  - name: 拷贝node_exporter systemd文件
+    copy: src=node_exporter.service dest=/usr/lib/systemd/system
+  - name: 启动node_exporter服务
+    systemd: name=node_exporter state=restarted enabled=yes daemon_reload=yes
+  - name: 推送注册脚本
+    copy: src=consul-register.sh dest=/usr/local/bin/
+  - name: 注册当前节点   
+    # 服务名 实例名 IP 端口 
+    shell: /bin/bash /usr/local/bin/consul-register.sh {{ group_names[0] }} {{ name }} {{ inventory_hostname }} {{ port }}    

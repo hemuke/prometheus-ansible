@@ -1,0 +1,10 @@
+[Unit]
+Description=prometheus-webhook-dingtalk
+After=network-online.target
+ 
+[Service]
+Restart=on-failure
+ExecStart=/opt/monitor/prometheus-webhook-dingtalk/prometheus-webhook-dingtalk --config.file=/opt/monitor/prometheus-webhook-dingtalk/config.yml
+ 
+[Install]
+WantedBy=multi-user.target

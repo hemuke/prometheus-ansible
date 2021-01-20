@@ -1,0 +1,10 @@
+[Unit]
+Description=node_exporter
+[Service]
+#ExecStart=/usr/local/node_exporter/node_exporter --web.config=/usr/local/node_exporter/config.yml
+ExecStart=/usr/local/node_exporter/node_exporter
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

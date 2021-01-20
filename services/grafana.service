@@ -1,0 +1,9 @@
+[Unit]
+Description=grafana
+[Service]
+ExecStart=/opt/monitor/grafana/bin/grafana-server --homepath=/opt/monitor/grafana
+ExecReload=/bin/kill -HUP 
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

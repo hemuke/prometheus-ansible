@@ -1,0 +1,9 @@
+[Unit]
+Description=mysqld_exporter
+[Service]
+ExecStart=/usr/local/mysqld_exporter/mysqld_exporter --config.my-cnf=/usr/local/mysqld_exporter/.my.cnf --collect.slave_status
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target

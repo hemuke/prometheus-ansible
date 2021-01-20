@@ -1,0 +1,10 @@
+- hosts: testhmk
+  tasks:
+    - name: Get Network Port Status
+      shell: netstat -lntp
+      register: net_port
+
+    - name: OutPut Network Port Status
+      debug:
+        #msg: "{{ net_port.stdout_lines }}"
+        msg: "{{ net_port }}"

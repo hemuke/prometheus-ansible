@@ -1,0 +1,14 @@
+- hosts: testhmk
+  tasks:
+  - name: Installed Packages
+    yum:
+      name:
+      - "{{ web_package }}"
+      - "{{ ftp_package }}"
+      state: present
+    register: mk_test
+
+  - name: debug
+    debug:
+      msg:
+      - "{{ mk_test }}"
